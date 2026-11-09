@@ -82,7 +82,13 @@ def main():
     model.to(device)
     
     checkpoint = torch.load(args.model_path, map_location=device)
-    model.load_state_dict(checkpoint)
+    model_state_dict = checkpoint.get("model_state_dict", checkpoint)
+    if "fpro.k_lp.weight" in model_state_dict and "hfam.k_lp.weight" not in model_state_dict:
+        model_state_dict = {
+            "hfam." + key[len("fpro."):] if key.startswith("fpro.") else key: value
+            for key, value in model_state_dict.items()
+        }
+    model.load_state_dict(model_state_dict)
     logger.info(f"Model loaded from {args.model_path}")
 
     model.eval()
